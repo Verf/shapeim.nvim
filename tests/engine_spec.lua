@@ -4,8 +4,15 @@
 package.path = package.path .. ";lua/?.lua;lua/?/init.lua"
 
 local engine = require("shapeim.engine")
+local compiler = require("shapeim.compiler")
 local passed = 0
 local failed = 0
+
+-- Compile test dictionary to the proper cache location
+local test_cache_dir = vim.fn.stdpath("data") .. "/shapeim"
+vim.fn.mkdir(test_cache_dir, "p")
+local test_cache_path = test_cache_dir .. "/cache.mpack"
+compiler.compile("tests/wubi86.dict.yaml", test_cache_path)
 
 local function assert_eq(actual, expected, msg)
   if actual == expected then
@@ -59,7 +66,7 @@ end
 do
   local cands = engine.get_candidates("a")
   assert_truthy(cands ~= nil, "get_candidates('a') returns non-nil")
-  assert_eq(#cands, 4, "get_candidates('a') returns 4 candidates")
+  assert_eq(#cands, 2, "get_candidates('a') returns 2 candidates")
   assert_eq(cands[1], "工", "first candidate for 'a' is 工")
   assert_eq(cands[2], "戈", "second candidate for 'a' is 戈")
 end
@@ -77,11 +84,11 @@ do
   assert_eq(#cands, 1, "get_candidates('aaaa') returns exactly 1 candidate")
 end
 
--- get_candidates for phrase
+-- get_candidates for multi-candidate code
 do
-  local cands = engine.get_candidates("aaaf")
-  assert_truthy(cands ~= nil, "get_candidates('aaaf') returns non-nil")
-  assert_truthy(#cands >= 1, "get_candidates('aaaf') has at least 1 candidate")
+  local cands = engine.get_candidates("fnhy")
+  assert_truthy(cands ~= nil, "get_candidates('fnhy') returns non-nil")
+  assert_truthy(#cands >= 1, "get_candidates('fnhy') has at least 1 candidate")
 end
 
 -- extract_code_from_buffer (requires buffer context)
@@ -127,6 +134,29 @@ assert_eq(engine.status(), "EN", "status is EN after disable")
 assert_truthy(engine.is_valid_prefix("a"), "'a' is a valid prefix (exists in dict)")
 assert_truthy(engine.is_valid_prefix("aa"), "'aa' is a valid prefix")
 assert_truthy(engine.is_valid_prefix("aaa"), "'aaa' is a valid prefix")
+
+-- get_cache_path
+local cp = engine.get_cache_path()
+assert_truthy(cp:find("shapeim"), "get_cache_path contains 'shapeim'")
+assert_truthy(cp:find("cache%.mpack"), "get_cache_path contains 'cache.mpack'")
+
+-- set_dict_path / get_dict_path
+engine.set_dict_path("~/test.yaml")
+local dp = engine.get_dict_path()
+assert_truthy(dp ~= nil, "get_dict_path returns non-nil after set_dict_path")
+
+-- ensure_cache (up-to-date check)
+do
+  local ok, err = engine.ensure_cache()
+  assert_truthy(ok, "ensure_cache succeeds when cache is up to date")
+end
+
+-- reload_dict
+do
+  local ok, err = engine.reload_dict()
+  assert_truthy(ok, "reload_dict succeeds")
+  assert_truthy(engine.state.dict_loaded, "reload_dict sets dict_loaded")
+end
 
 -- Summary
 vim.api.nvim_err_writeln(string.format("\n=== Results: %d passed, %d failed ===", passed, failed))

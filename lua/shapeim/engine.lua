@@ -1,8 +1,9 @@
 ---@class shapeim.engine
----@brief Core state machine and dictionary lookups.
+---@brief Core state machine, dictionary lookups, and path management.
 ---
 --- Manages the global IM state, lazy dictionary loading,
 --- and provides the O(1) candidate lookup via `get_candidates(code)`.
+--- Also holds the canonical paths for the dictionary source and cache.
 ---
 --- State fields:
 ---   enabled      (bool)   IM toggle state
@@ -11,6 +12,9 @@
 ---   dict         (table)  Dict[code] = {candidate, ...}
 
 local M = {}
+
+-- Canonical paths, set by init.setup().
+local dict_path = nil
 
 ---@class shapeim.EngineState
 ---@field enabled boolean
@@ -37,8 +41,59 @@ M.state = {
   auto_clear = true,
 }
 
--- Path to the compiled mpack cache.
-local cache_path = vim.fn.stdpath("data") .. "/shapeim_cache.mpack"
+---Get the dictionary source path.
+---@return string|nil
+function M.get_dict_path()
+  return dict_path
+end
+
+---Set the dictionary source path. Called once by init.setup().
+---@param path string
+function M.set_dict_path(path)
+  dict_path = vim.fn.expand(path)
+end
+
+---Get the compiled cache path.
+---@return string
+function M.get_cache_path()
+  local dir = vim.fn.stdpath("data") .. "/shapeim"
+  return dir .. "/cache.mpack"
+end
+
+---Ensure the mpack cache exists and is up-to-date.
+---Compares dict_path mtime against cache mtime; recompiles if source is newer.
+---@return boolean success
+---@return string|nil error_message
+function M.ensure_cache()
+  if not dict_path then
+    return false, "dict_path not set"
+  end
+
+  local cache_path = M.get_cache_path()
+  local cache_dir = vim.fn.fnamemodify(cache_path, ":h")
+  vim.fn.mkdir(cache_dir, "p")
+
+  -- Check if recompile is needed
+  if vim.fn.filereadable(cache_path) then
+    local cache_mtime = vim.fn.getftime(cache_path)
+    local dict_mtime = vim.fn.getftime(dict_path)
+    if cache_mtime >= dict_mtime then
+      return true -- Up to date
+    end
+  end
+
+  -- Compile
+  local compiler = require("shapeim.compiler")
+  vim.notify("shapeim: compiling dictionary ...", vim.log.levels.INFO)
+  local ok, msg = compiler.compile(dict_path, cache_path)
+  if ok then
+    vim.notify("shapeim: " .. msg, vim.log.levels.INFO)
+    return true
+  else
+    vim.notify("shapeim: compile failed: " .. (msg or "unknown"), vim.log.levels.ERROR)
+    return false, msg
+  end
+end
 
 ---Load the dictionary from the mpack cache into M.state.dict.
 ---Idempotent: does nothing if already loaded.
@@ -49,6 +104,7 @@ function M.load_dict()
     return true
   end
 
+  local cache_path = M.get_cache_path()
   if not vim.fn.filereadable(cache_path) then
     return false, "Dictionary cache not found: " .. cache_path .. ". Run :ShapeimCompile first."
   end
@@ -81,6 +137,15 @@ function M.load_dict()
   M.state.prefix_set = prefix_set
 
   return true
+end
+
+---Reload the dictionary from cache. Resets loaded state so the next load
+---reads the latest mpack file. Safe to call anytime.
+function M.reload_dict()
+  M.state.dict_loaded = false
+  M.state.dict = nil
+  M.state.prefix_set = nil
+  return M.load_dict()
 end
 
 ---Look up candidates for an exact code.

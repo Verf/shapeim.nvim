@@ -20,7 +20,7 @@ require('shapeim').setup({
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `dict_path` | `string\|nil` | `nil` | Path to Rime `.dict.yaml` file. Auto-compiles to mpack cache on first load if cache is missing. |
+| `dict_path` | `string` | **required** | Path to Rime `.dict.yaml` file. Auto-compiles on startup; recompiles if source is newer than cache. |
 | `toggle_key` | `string` | `"<C-\\>"` | Key binding for toggling the IM on/off. Bound in Insert and Normal modes. |
 | `persist_state` | `boolean` | `true` | If true, the IM toggle state is saved to `stdpath('data')/shapeim_state.json` and restored on next Neovim start. |
 | `debug` | `boolean` | `false` | Show verbose info messages (toggle state, provider detection, compilation progress). |
@@ -58,16 +58,17 @@ require('lualine').setup({
 vim.opt.statusline = "%{v:lua.require('shapeim').status()}"
 ```
 
-## `:ShapeimCompile {path}`
+## `:ShapeimCompile`
 
-Neovim command to manually compile a Rime `.dict.yaml` file.
+Neovim command to recompile the dictionary from the `dict_path` set in `setup()`.
 
 ```
-:ShapeimCompile ~/rime/wubi86.dict.yaml
+:ShapeimCompile
 ```
 
-**Output:** `stdpath('data')/shapeim_cache.mpack`
-**Note:** Only needed if you did not set `dict_path` in `setup()`, or want to recompile after updating the dictionary.
+**Output:** `stdpath('data')/shapeim/cache.mpack`
+**Note:** After compilation, the dictionary is automatically reloaded — no restart needed.
+Use this when you update your dictionary during a session.
 
 ## Blink.cmp Integration
 

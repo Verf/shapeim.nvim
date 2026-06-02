@@ -64,21 +64,26 @@ Manual setup: >
     })
 <
 
-On first load, shapeim will automatically compile the dictionary from
-`dict_path` into a fast mpack cache file at:
-    `stdpath("data")/shapeim_cache.mpack`
+`dict_path` is required. On startup, shapeim compares the timestamps
+of the dictionary file and the cache; if the dictionary is newer,
+it automatically recompiles.
 
-If `dict_path` is not set, use |:ShapeimCompile| to compile manually.
+All shapeim data files are stored under:
+    `stdpath("data")/shapeim/`
+    - `cache.mpack`  compiled dictionary cache
+    - `state.json`   IM toggle state
 
 ==============================================================================
 4. COMMANDS                                            *shapeim-commands*
 
-:ShapeimCompile {path}                                  *:ShapeimCompile*
-    Compile a Rime `.dict.yaml` file into the mpack cache.
-    The cache is written to `stdpath("data")/shapeim_cache.mpack`.
+:ShapeimCompile                                        *:ShapeimCompile*
+    Recompile the dictionary from the `dict_path` set in |shapeim.setup()|.
+    The cache is written to `stdpath("data")/shapeim/cache.mpack`.
+    After compilation, the in-memory dictionary is automatically reloaded —
+    no Neovim restart needed.
 
-    Example: >
-        :ShapeimCompile ~/rime/wubi86.dict.yaml
+    Usage: >
+        :ShapeimCompile
 <
 
 ==============================================================================
@@ -162,7 +167,7 @@ Built-in Completion (fallback) ~
 All options are passed to `require("shapeim").setup()`: >
 
     require("shapeim").setup({
-      dict_path = nil,          -- Path to .dict.yaml file
+      dict_path = nil,          -- Path to .dict.yaml file (required)
       toggle_key = "<C-\\>",    -- Key to toggle IM
       persist_state = true,     -- Remember state across sessions
       debug = false,            -- Show verbose info messages
@@ -174,9 +179,11 @@ All options are passed to `require("shapeim").setup()`: >
 <
 Options:                                                *shapeim-options*
 
-    dict_path       (string|nil, default: nil)
-        Path to a Rime .dict.yaml file. On first load, automatically
-        compiles it to the mpack cache. If nil, use :ShapeimCompile.
+    dict_path       (string, required)
+        Path to a Rime .dict.yaml file. Must be set. On each startup,
+        automatically compiles / recompiles if the source file is newer
+        than the cache. Use |:ShapeimCompile| to recompile manually
+        during a session (auto-reloaded).
 
     toggle_key      (string, default: "<C-\\>")
         Key binding for toggling the IM on/off. Bound in Insert and
@@ -184,7 +191,7 @@ Options:                                                *shapeim-options*
 
     persist_state   (boolean, default: true)
         If true, the IM toggle state is saved to
-        `stdpath("data")/shapeim_state.json` and restored on next
+        `stdpath("data")/shapeim/state.json` and restored on next
         Neovim start.
 
     debug           (boolean, default: false)

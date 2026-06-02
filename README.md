@@ -63,8 +63,12 @@ require("shapeim").setup({
 })
 ```
 
-On first load, shapeim will **automatically compile** the dictionary from `dict_path`
-into a fast mpack cache at `stdpath("data")/shapeim_cache.mpack`.
+`dict_path` is **required**. On startup, shapeim compares timestamps and
+automatically recompiles if the dictionary file is newer.
+
+All shapeim data files are stored under `stdpath("data")/shapeim/`:
+- `cache.mpack` — compiled dictionary cache
+- `state.json` — IM toggle state
 
 ## Quick Start
 
@@ -86,7 +90,7 @@ Top:     type 5th key   →  first 4 committed, 5th starts new code
 
 ```lua
 require("shapeim").setup({
-  -- Path to Rime .dict.yaml file (auto-compiled on first load)
+  -- Path to Rime .dict.yaml file (required, auto-compiled on startup)
   dict_path = nil,
 
   -- Key to toggle IM on/off
@@ -114,7 +118,7 @@ require("shapeim").setup({
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `dict_path` | `string\|nil` | `nil` | Path to `.dict.yaml`. Auto-compiles on first load. |
+| `dict_path` | `string` | (required) | Path to `.dict.yaml`. Auto-compiles on startup; recompiles if source is newer. |
 | `toggle_key` | `string` | `"<C-\\>"` | Key binding for IM toggle. |
 | `persist_state` | `boolean` | `true` | Save toggle state to disk, restore on startup. |
 | `debug` | `boolean` | `false` | Show info-level notifications. |
@@ -127,10 +131,10 @@ require("shapeim").setup({
 
 | Command | Description |
 |---------|-------------|
-| `:ShapeimCompile {path}` | Compile a Rime `.dict.yaml` to the mpack cache. |
+| `:ShapeimCompile` | Recompile from the `dict_path` set in `setup()`. Auto-reloads after. |
 
-Use this if you didn't set `dict_path` in `setup()`, or want to recompile
-after updating your dictionary.
+Use this to recompile manually during a session after updating your dictionary
+(no restart needed).
 
 ## Input Rules
 

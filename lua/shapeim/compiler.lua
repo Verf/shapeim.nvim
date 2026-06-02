@@ -1,8 +1,8 @@
 ---@class shapeim.compiler
 ---@brief Parses Rime .dict.yaml and serializes to .mpack.
 ---
---- Invoked via `:ShapeimCompile {path}` or programmatically via
---- `require('shapeim.compiler').compile(input_path, output_path)`.
+--- Invoked via `:ShapeimCompile` (no-args, uses dict_path from setup) or
+--- programmatically via `require('shapeim.compiler').compile(input_path, output_path)`.
 ---
 --- Dictionary Format (Rime .dict.yaml):
 ---   YAML header above `...`, then `code\ttext` lines.
@@ -153,27 +153,25 @@ function M.compile(input_path, output_path)
 end
 
 ---Neovim command handler for :ShapeimCompile.
+---No arguments: reads dict_path and cache_path from engine.
 ---@param opts table Command options from nvim_create_user_command.
-function M.command(opts)
-  local input_path = opts.args
-  if not input_path or input_path == "" then
-    vim.notify("Usage: :ShapeimCompile {path/to/dict.yaml}", vim.log.levels.ERROR)
+function M.command()
+  local engine = require("shapeim.engine")
+  local input_path = engine.get_dict_path()
+  if not input_path then
+    vim.notify("shapeim: dict_path not set. Call setup() first.", vim.log.levels.ERROR)
     return
   end
 
-  -- Resolve relative paths against cwd
-  if not vim.fn.filereadable(input_path) then
-    vim.notify("File not found: " .. input_path, vim.log.levels.ERROR)
-    return
-  end
-
-  local output_path = vim.fn.stdpath("data") .. "/shapeim_cache.mpack"
-  vim.notify("Compiling " .. input_path .. " ...", vim.log.levels.INFO)
+  local output_path = engine.get_cache_path()
+  vim.notify("shapeim: compiling " .. input_path .. " ...", vim.log.levels.INFO)
   local ok, msg = M.compile(input_path, output_path)
   if ok then
-    vim.notify(msg, vim.log.levels.INFO)
+    vim.notify("shapeim: " .. msg, vim.log.levels.INFO)
+    engine.reload_dict()
+    vim.notify("shapeim: dictionary reloaded", vim.log.levels.INFO)
   else
-    vim.notify("Compile failed: " .. (msg or "unknown error"), vim.log.levels.ERROR)
+    vim.notify("shapeim: compile failed: " .. (msg or "unknown error"), vim.log.levels.ERROR)
   end
 end
 

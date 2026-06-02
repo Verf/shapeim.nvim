@@ -61,8 +61,12 @@ require("shapeim").setup({
 })
 ```
 
-首次加载时，shapeim 将**自动编译** `dict_path` 指向的码表为快速 mpack 缓存，
-保存在 `stdpath("data")/shapeim_cache.mpack`。
+`dict_path` **为必填项**。启动时 shapeim 会比较码表与缓存的时间戳，
+若码表更新则自动重新编译。
+
+所有 shapeim 数据文件统一存放在 `stdpath("data")/shapeim/` 下：
+- `cache.mpack` — 编译后的码表缓存
+- `state.json` — 输入法开关状态
 
 ## 快速开始
 
@@ -84,7 +88,7 @@ require("shapeim").setup({
 
 ```lua
 require("shapeim").setup({
-  -- Rime .dict.yaml 码表路径（首次加载自动编译）
+  -- Rime .dict.yaml 码表路径（必填，启动时自动编译）
   dict_path = nil,
 
   -- 切换输入法的快捷键
@@ -112,7 +116,7 @@ require("shapeim").setup({
 
 | 选项 | 类型 | 默认值 | 说明 |
 |--------|------|---------|-------------|
-| `dict_path` | `string\|nil` | `nil` | `.dict.yaml` 码表路径，首次加载自动编译 |
+| `dict_path` | `string` | （必填） | `.dict.yaml` 码表路径。启动时自动编译，源码表更新则重编译 |
 | `toggle_key` | `string` | `"<C-\\>"` | 输入法切换快捷键 |
 | `persist_state` | `boolean` | `true` | 开关状态持久化到磁盘，下次启动恢复 |
 | `debug` | `boolean` | `false` | 显示 info 级别的通知消息 |
@@ -125,9 +129,9 @@ require("shapeim").setup({
 
 | 命令 | 说明 |
 |---------|-------------|
-| `:ShapeimCompile {path}` | 编译 Rime `.dict.yaml` 为 mpack 缓存 |
+| `:ShapeimCompile` | 从 setup() 中设置的 dict_path 重新编译。编译后自动热重载 |
 
-如果你在 `setup()` 中没有设置 `dict_path`，或更新码表后需要重新编译，可使用此命令。
+更新码表后可用于手动重新编译（无需重启 Neovim）。
 
 ## 输入规则
 

@@ -20,7 +20,7 @@ local engine
 local compiler
 
 ---@class shapeim.SetupOpts
----@field dict_path string|nil Path to .dict.yaml for auto-compile on first load.
+---@field dict_path string Path to .dict.yaml (required).
 ---@field toggle_key string Key binding for IM toggle (default: "<C-\\>").
 ---@field persist_state boolean Remember IM state across sessions (default: true).
 ---@field debug boolean Show verbose info messages (default: false).
@@ -60,7 +60,7 @@ end
 
 -- State persistence file.
 local function state_file_path()
-  return vim.fn.stdpath("data") .. "/shapeim_state.json"
+  return vim.fn.stdpath("data") .. "/shapeim/state.json"
 end
 
 ---Save the current enabled state to a JSON file.
@@ -107,30 +107,7 @@ local function toggle_im()
   info("shapeim: " .. engine.status())
 end
 
----Ensure the cache exists. If dict_path is set and cache is missing, compile it.
-local function ensure_cache()
-  local cache_path = vim.fn.stdpath("data") .. "/shapeim_cache.mpack"
-  if vim.fn.filereadable(cache_path) then
-    return true
-  end
-  if M._config.dict_path then
-    local expanded = vim.fn.expand(M._config.dict_path)
-    if not vim.fn.filereadable(expanded) then
-      err("shapeim: dict_path file not found: " .. expanded)
-      return false
-    end
-    info("shapeim: compiling dictionary (one-time) ...")
-    local ok, msg = compiler.compile(expanded, cache_path)
-    if ok then
-      info("shapeim: " .. msg)
-      return true
-    else
-      err("shapeim: compile failed: " .. (msg or "unknown"))
-      return false
-    end
-  end
-  return false
-end
+
 
 ---Create the toggle keymap in Insert and Normal modes.
 local function setup_toggle_keymap()
@@ -207,17 +184,26 @@ function M.setup(opts)
   -- Apply behaviour configuration to engine state
   engine.configure(M._config)
 
-  -- Register :ShapeimCompile command
+  -- Validate and set dict_path (required)
+  if not M._config.dict_path then
+    err("shapeim: dict_path is required in setup(). Example: dict_path = '~/rime/wubi86.dict.yaml'")
+    return
+  end
+  local expanded = vim.fn.expand(M._config.dict_path)
+  if not vim.fn.filereadable(expanded) then
+    err("shapeim: dict_path file not found: " .. expanded)
+    return
+  end
+  engine.set_dict_path(M._config.dict_path)
+
+  -- Register :ShapeimCompile command (no-args: uses dict_path from setup)
   vim.api.nvim_create_user_command("ShapeimCompile", compiler.command, {
-    nargs = 1,
-    complete = "file",
-    desc = "Compile a Rime .dict.yaml to shapeim cache",
+    nargs = 0,
+    desc = "Recompile the dictionary from the dict_path set in setup()",
   })
 
-  -- Ensure dictionary cache exists
-  if not ensure_cache() then
-    warn("shapeim: no dictionary found. Set dict_path in setup() or run :ShapeimCompile.")
-  end
+  -- Ensure dictionary cache exists and is up-to-date
+  engine.ensure_cache()
 
   -- Setup toggle keymap
   setup_toggle_keymap()
