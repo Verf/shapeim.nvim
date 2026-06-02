@@ -1,0 +1,243 @@
+*shapeim.txt*  Shape-based Chinese input method for Neovim
+
+==============================================================================
+CONTENTS                                                  *shapeim-contents*
+
+  1. Introduction .................... |shapeim-intro|
+  2. Requirements .................... |shapeim-requirements|
+  3. Setup ........................... |shapeim-setup|
+  4. Commands ........................ |shapeim-commands|
+  5. Usage ........................... |shapeim-usage|
+  6. Input Rules ..................... |shapeim-rules|
+  7. Completion ...................... |shapeim-completion|
+  8. Configuration ................... |shapeim-config|
+  9. Statusline ...................... |shapeim-statusline|
+ 10. API ............................. |shapeim-api|
+
+==============================================================================
+1. INTRODUCTION                                          *shapeim-intro*
+
+shapeim.nvim is a zero-dependency Neovim input method plugin for shape-based
+(形码) Chinese input. It works with any shape-based dictionary (Wubi, Cangjie,
+Zhengma, etc.) in Rime `.dict.yaml` format.
+
+It provides:
+
+  - Native dictionary compilation from Rime `.dict.yaml` files
+  - O(1) dictionary lookups via mpack caching
+  - Integration with blink.cmp (primary) or Neovim built-in completion
+  - Full shape-based input rules: auto-commit, auto-top, prefix tolerance
+  - Atomic undo grouping for all text replacements
+
+==============================================================================
+2. REQUIREMENTS                                      *shapeim-requirements*
+
+  - Neovim >= 0.10
+  - A shape-based dictionary in Rime `.dict.yaml` format
+    (e.g., wubi86, cangjie5, zhengma)
+  - blink.cmp (optional, for enhanced completion UI)
+
+==============================================================================
+3. SETUP                                                    *shapeim-setup*
+
+Using lazy.nvim: >
+    {
+      "yourname/shapeim.nvim",
+      opts = {
+        dict_path = "~/rime/wubi86.dict.yaml",
+      },
+    }
+<
+Using packer.nvim: >
+    use {
+      "yourname/shapeim.nvim",
+      config = function()
+        require("shapeim").setup({
+          dict_path = "~/rime/wubi86.dict.yaml",
+        })
+      end,
+    }
+<
+Manual setup: >
+    require("shapeim").setup({
+      dict_path = "~/rime/wubi86.dict.yaml",
+    })
+<
+
+On first load, shapeim will automatically compile the dictionary from
+`dict_path` into a fast mpack cache file at:
+    `stdpath("data")/shapeim_cache.mpack`
+
+If `dict_path` is not set, use |:ShapeimCompile| to compile manually.
+
+==============================================================================
+4. COMMANDS                                            *shapeim-commands*
+
+:ShapeimCompile {path}                                  *:ShapeimCompile*
+    Compile a Rime `.dict.yaml` file into the mpack cache.
+    The cache is written to `stdpath("data")/shapeim_cache.mpack`.
+
+    Example: >
+        :ShapeimCompile ~/rime/wubi86.dict.yaml
+<
+
+==============================================================================
+5. USAGE                                                    *shapeim-usage*
+
+Toggle IM: >
+    Default key: <C-\> in Insert or Normal mode.
+    Status shows "中" when enabled, "EN" when disabled.
+<
+Typing shape codes: >
+    With IM enabled, type lowercase a-y characters.
+    The completion menu shows candidates for the current code.
+
+    Space       Commit first candidate
+    1-9         Select candidate by rank (with blink.cmp)
+    Backspace   Delete last code character
+<
+
+To type English, toggle the IM off (<C-\>).
+
+==============================================================================
+6. INPUT RULES                                          *shapeim-rules*
+
+shapeim implements standard shape-based input rules:
+
+Rule A: Space Commit                                   *shapeim-rule-a*
+    Press Space to commit the first candidate of the current code.
+    The code characters are replaced by the Chinese text.
+    If no code or no candidates, a normal space is inserted.
+
+Rule B: 4-Key Unique Auto-Commit                       *shapeim-rule-b*
+    If a 4-character code has exactly one candidate,
+    it is automatically committed (no Space needed).
+
+Rule C: 5th-Key Auto-Top (顶字上屏)                     *shapeim-rule-c*
+    When a 5th key is typed after a 4-key code that has candidates,
+    the first candidate of the 4-key code is committed,
+    and the 5th character starts a new code.
+
+Rule D: Invalid Code Auto-Clear                        *shapeim-rule-d*
+    If the typed code has no dictionary entry and is not a valid
+    prefix of any entry, the last character is deleted and a
+    warning "invalid stroke" is shown. The `z` key is excluded from
+    the alphabetical code range and reserved for future features.
+
+Interruption:
+    Any non-[a-y] action (cursor move, Enter, Esc, digits, symbols)
+    resets the current code.
+
+Prefix Tolerance:
+    Partial codes (fewer than 4 characters) that don't have exact
+    dictionary matches but ARE valid prefixes of longer entries
+    are tolerated — no auto-clear. This allows gradual code building
+    (e.g., typing "vk" for the 4-code word "vkjs").
+
+==============================================================================
+7. COMPLETION                                        *shapeim-completion*
+
+shapeim supports two completion backends:
+
+blink.cmp (primary) ~
+    Automatically detected and registered. The source is added with
+    score_offset = 100 to appear above other sources.
+    To customize, add to your blink.cmp config: >
+        sources.providers.shapeim = {
+          name = "shapeim",
+          module = "shapeim.source",
+          score_offset = 100,
+          min_keyword_length = 1,
+        }
+<
+
+Built-in Completion (fallback) ~
+    If blink.cmp is not detected, shapeim uses Neovim's built-in
+    `completefunc` mechanism. Navigate with <C-n>/<C-p>, accept with
+    <C-y>. Also compatible with mini.completion and nvim-cmp.
+
+==============================================================================
+8. CONFIGURATION                                      *shapeim-config*
+
+All options are passed to `require("shapeim").setup()`: >
+
+    require("shapeim").setup({
+      dict_path = nil,          -- Path to .dict.yaml file
+      toggle_key = "<C-\\>",    -- Key to toggle IM
+      persist_state = true,     -- Remember state across sessions
+      debug = false,            -- Show verbose info messages
+      max_code_length = 4,      -- Code length for auto-commit (4=Wubi, 5=Cangjie)
+      auto_select = false,      -- Auto-commit first at max length even with collisions
+      auto_select_unique_candidate = true, -- Auto-commit when exactly 1 candidate
+      auto_clear = true,        -- Clear invalid codes immediately
+    })
+<
+Options:                                                *shapeim-options*
+
+    dict_path       (string|nil, default: nil)
+        Path to a Rime .dict.yaml file. On first load, automatically
+        compiles it to the mpack cache. If nil, use :ShapeimCompile.
+
+    toggle_key      (string, default: "<C-\\>")
+        Key binding for toggling the IM on/off. Bound in Insert and
+        Normal modes.
+
+    persist_state   (boolean, default: true)
+        If true, the IM toggle state is saved to
+        `stdpath("data")/shapeim_state.json` and restored on next
+        Neovim start.
+
+    debug           (boolean, default: false)
+        Show verbose info messages (toggle state, provider detection,
+        compilation progress). Errors and warnings are always shown.
+
+    max_code_length (number, default: 4)
+        Code length at which auto-commit rules (B and C) trigger.
+        Set to 4 for Wubi, 5 for Cangjie.
+
+    auto_select     (boolean, default: false)
+        When code reaches max_code_length, auto-commit the first
+        candidate even if there are multiple (collision). If false,
+        the user must choose from the completion menu.
+
+    auto_select_unique_candidate (boolean, default: true)
+        When code reaches max_code_length and there is exactly one
+        candidate, auto-commit it. This is independent of auto_select.
+
+    auto_clear      (boolean, default: true)
+        When true, invalid codes (no match and not a valid prefix)
+        are immediately deleted with a warning. Set to false to
+        allow manual correction of typos.
+
+==============================================================================
+9. STATUSLINE                                        *shapeim-statusline*
+
+Use `require("shapeim").status()` to display the IM state in your
+statusline or lualine:
+
+lualine example: >
+    require("lualine").setup({
+      sections = {
+        lualine_x = { require("shapeim").status },
+      },
+    })
+<
+Manual statusline: >
+    vim.opt.statusline = "%{v:lua.require('shapeim').status()}"
+<
+Returns "中" when enabled (shape input active), "EN" when disabled.
+
+==============================================================================
+10. API                                                    *shapeim-api*
+
+shapeim.toggle()                                        *shapeim.toggle()*
+    Toggle the IM on/off programmatically.
+
+shapeim.status()                                        *shapeim.status()*
+    Returns "中" or "EN" for use in statusline components.
+
+shapeim.setup({opts})                                   *shapeim.setup()*
+    Initialize shapeim with the given options. See |shapeim-config|.
+
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
