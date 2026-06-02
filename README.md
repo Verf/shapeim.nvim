@@ -190,6 +190,21 @@ vim.opt.statusline = "%{v:lua.require('shapeim').status()}"
 
 Returns `中` when shape input is active, `EN` when disabled.
 
+For real-time updates on `<C-\>` toggle, subscribe to the `User ShapeimToggle` event:
+
+```lua
+-- Add to your init.lua / autocmd config
+vim.api.nvim_create_autocmd("User", {
+  pattern = "ShapeimToggle",
+  callback = function() vim.cmd.redrawstatus() end,
+  desc = "Redraw statusline on shapeim toggle",
+})
+```
+
+This is required for basic `vim.opt.statusline` (which only redraws on mode/event
+changes). lualine users may not need this if their refresh interval is set, but
+adding the autocmd guarantees instant updates.
+
 ## How It Works
 
 ```

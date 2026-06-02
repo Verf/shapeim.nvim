@@ -227,6 +227,14 @@ Manual statusline: >
 <
 Returns "中" when enabled (shape input active), "EN" when disabled.
 
+For real-time updates on toggle, subscribe to the ShapeimToggle event: >
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "ShapeimToggle",
+      callback = function() vim.cmd.redrawstatus() end,
+    })
+<
+This is required with `vim.opt.statusline` (only redraws on mode/event changes).
+
 ==============================================================================
 10. API                                                    *shapeim-api*
 

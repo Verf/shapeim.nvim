@@ -184,6 +184,20 @@ vim.opt.statusline = "%{v:lua.require('shapeim').status()}"
 
 形码输入开启时返回 `中`，关闭时返回 `EN`。
 
+要让状态栏在 `<C-\>` 切换时实时更新，需要订阅 `User ShapeimToggle` 事件：
+
+```lua
+-- 加到你的 init.lua 或 autocmd 配置中
+vim.api.nvim_create_autocmd("User", {
+  pattern = "ShapeimToggle",
+  callback = function() vim.cmd.redrawstatus() end,
+  desc = "Redraw statusline on shapeim toggle",
+})
+```
+
+`vim.opt.statusline` 只在 mode 切换或事件触发时重绘，不订阅事件则不会自动刷新。
+lualine 用户如果设置了刷新间隔可能不需要，但加上 autocmd 能保证即时更新。
+
 ## 工作原理
 
 ```

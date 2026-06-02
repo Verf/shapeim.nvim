@@ -98,6 +98,9 @@ end
 ---Toggle the IM and persist state if configured.
 local function toggle_im()
   local new_state = engine.toggle()
+  -- Emit User event so downstream consumers (statusline, lualine, etc.)
+  -- can react to state changes in real time.
+  vim.api.nvim_exec_autocmds("User", { pattern = "ShapeimToggle" })
   if M._config.persist_state then
     persist_state()
   end
