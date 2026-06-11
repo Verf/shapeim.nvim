@@ -44,15 +44,19 @@ assert_eq(engine.state.max_code_length, 4, "default max_code_length is 4")
 assert_eq(engine.state.auto_select, false, "default auto_select is false")
 assert_eq(engine.state.auto_select_unique_candidate, true, "default auto_select_unique_candidate is true")
 assert_eq(engine.state.auto_clear, true, "default auto_clear is true")
+assert_eq(engine.state.disable_on_insert_leave, false, "default disable_on_insert_leave is false")
+assert_eq(engine.state.disable_on_insert_enter, false, "default disable_on_insert_enter is false")
 
 -- configure() updates state
-engine.configure({ max_code_length = 5, auto_select = true, auto_select_unique_candidate = false, auto_clear = false })
+engine.configure({ max_code_length = 5, auto_select = true, auto_select_unique_candidate = false, auto_clear = false, disable_on_insert_leave = true, disable_on_insert_enter = true })
 assert_eq(engine.state.max_code_length, 5, "configure updates max_code_length to 5")
 assert_eq(engine.state.auto_select, true, "configure updates auto_select to true")
 assert_eq(engine.state.auto_select_unique_candidate, false, "configure updates auto_select_unique_candidate to false")
 assert_eq(engine.state.auto_clear, false, "configure updates auto_clear to false")
+assert_eq(engine.state.disable_on_insert_leave, true, "configure updates disable_on_insert_leave to true")
+assert_eq(engine.state.disable_on_insert_enter, true, "configure updates disable_on_insert_enter to true")
 -- Restore defaults for remaining tests
-engine.configure({ max_code_length = 4, auto_select = false, auto_select_unique_candidate = true, auto_clear = true })
+engine.configure({ max_code_length = 4, auto_select = false, auto_select_unique_candidate = true, auto_clear = true, disable_on_insert_leave = false, disable_on_insert_enter = false })
 
 -- load_dict
 do
@@ -112,9 +116,28 @@ end
 do
   local ok = engine.enable()
   assert_truthy(ok, "enable returns ok")
+  assert_eq(engine.state.enabled, true, "enable sets enabled to true")
   engine.disable()
   assert_eq(engine.state.enabled, false, "disable sets enabled to false")
   assert_eq(engine.state.current_code, "", "disable resets current_code")
+end
+
+-- disable guard: calling disable() when already disabled is idempotent
+do
+  engine.state.enabled = false
+  engine.state.current_code = ""
+  -- Should not error; state stays disabled
+  engine.disable()
+  assert_eq(engine.state.enabled, false, "disable guard: stays disabled when already disabled")
+end
+
+-- disable guard: does not call reset_code when already disabled
+do
+  engine.state.enabled = false
+  engine.state.current_code = "preserved"
+  engine.disable()
+  -- current_code should remain "preserved" because disable() returns early
+  assert_eq(engine.state.current_code, "preserved", "disable guard: does not reset code when already disabled")
 end
 
 -- reset_code
@@ -123,9 +146,6 @@ do
   engine.reset_code()
   assert_eq(engine.state.current_code, "", "reset_code clears current_code")
 end
-
--- Status after disable
-assert_eq(engine.status(), "EN", "status is EN after disable")
 
 -- Status after disable
 assert_eq(engine.status(), "EN", "status is EN after disable")

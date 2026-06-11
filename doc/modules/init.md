@@ -13,7 +13,6 @@ Main setup function. Must be called once in the user's Neovim config.
 |--------|------|---------|-------------|
 | `dict_path` | `string\|nil` | `nil` | Path to `.dict.yaml`. Auto-compiles on first load if cache missing. |
 | `toggle_key` | `string` | `"<C-\\>"` | Key binding for IM toggle (Insert and Normal modes). |
-| `persist_state` | `boolean` | `true` | Remember IM toggle state across Neovim sessions. |
 | `debug` | `boolean` | `false` | Show verbose info messages (toggle state, provider detection, compilation progress). |
 
 **Actions performed by setup():**
@@ -22,7 +21,6 @@ Main setup function. Must be called once in the user's Neovim config.
 3. Calls `ensure_cache()` — auto-compiles if `dict_path` is set and cache missing.
 4. Creates toggle keymap in Insert and Normal modes.
 5. Registers completion provider (blink.cmp or built-in fallback).
-6. Restores persisted state (via `vim.schedule` to avoid startup ordering issues).
 
 ### `M.toggle()`
 Programmatic toggle. Same as pressing the toggle key.
@@ -49,8 +47,7 @@ Detects blink.cmp availability (deferred via `vim.schedule()` to support lazy-lo
 - **blink.cmp available:** Registers `shapeim.source` as a blink.cmp provider with `score_offset = 100` (appears above other sources).
 - **blink.cmp not available:** Activates `shapeim.complete` built-in fallback (sets `completefunc`, creates auto-trigger autocommand).
 
-### State Persistence
-- **File:** `stdpath('data')/shapeim_state.json`
-- **Format:** `{"enabled": true}`
-- **Save:** On each toggle.
-- **Restore:** On `VimEnter` (via `vim.schedule` in `setup()`).
+### Auto-Disable Options
+- `disable_on_insert_leave`: Auto-disable IM when leaving Insert mode.
+- `disable_on_insert_enter`: Auto-disable IM when entering Insert mode.
+Both are one-way operations — they do not track or restore previous state.

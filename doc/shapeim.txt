@@ -71,7 +71,6 @@ it automatically recompiles.
 All shapeim data files are stored under:
     `stdpath("data")/shapeim/`
     - `cache.mpack`  compiled dictionary cache
-    - `state.json`   IM toggle state
 
 ==============================================================================
 4. COMMANDS                                            *shapeim-commands*
@@ -169,12 +168,13 @@ All options are passed to `require("shapeim").setup()`: >
     require("shapeim").setup({
       dict_path = nil,          -- Path to .dict.yaml file (required)
       toggle_key = "<C-\\>",    -- Key to toggle IM
-      persist_state = true,     -- Remember state across sessions
       debug = false,            -- Show verbose info messages
       max_code_length = 4,      -- Code length for auto-commit (4=Wubi, 5=Cangjie)
       auto_select = false,      -- Auto-commit first at max length even with collisions
       auto_select_unique_candidate = true, -- Auto-commit when exactly 1 candidate
       auto_clear = true,        -- Clear invalid codes immediately
+      disable_on_insert_leave = false, -- Auto-disable IM on InsertLeave
+      disable_on_insert_enter = false, -- Auto-disable IM on InsertEnter
     })
 <
 Options:                                                *shapeim-options*
@@ -188,11 +188,6 @@ Options:                                                *shapeim-options*
     toggle_key      (string, default: "<C-\\>")
         Key binding for toggling the IM on/off. Bound in Insert and
         Normal modes.
-
-    persist_state   (boolean, default: true)
-        If true, the IM toggle state is saved to
-        `stdpath("data")/shapeim/state.json` and restored on next
-        Neovim start.
 
     debug           (boolean, default: false)
         Show verbose info messages (toggle state, provider detection,
@@ -215,6 +210,18 @@ Options:                                                *shapeim-options*
         When true, invalid codes (no match and not a valid prefix)
         are immediately deleted with a warning. Set to false to
         allow manual correction of typos.
+
+    disable_on_insert_leave (boolean, default: false)
+        When true, the IM is automatically disabled when leaving
+        Insert mode (if currently enabled). This is a one-way
+        operation: it does not track or restore the previous state
+        when re-entering Insert mode.
+
+    disable_on_insert_enter (boolean, default: false)
+        When true, the IM is automatically disabled when entering
+        Insert mode (if currently enabled). This is a one-way
+        operation: the user can manually toggle the IM back on
+        within the same Insert session.
 
 ==============================================================================
 9. STATUSLINE                                        *shapeim-statusline*

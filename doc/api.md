@@ -9,12 +9,13 @@ Initialize shapeim.nvim. Call once in your Neovim config.
 require('shapeim').setup({
   dict_path = "~/rime/wubi86.dict.yaml",  -- Path to .dict.yaml
   toggle_key = "<C-\\>",                   -- Key to toggle IM
-  persist_state = true,                    -- Remember state across sessions
   debug = false,                           -- Show verbose info messages
   max_code_length = 4,                     -- Code length for auto-commit (4=Wubi, 5=Cangjie)
   auto_select = false,                     -- Auto-commit first at max length even with collisions
   auto_select_unique_candidate = true,     -- Auto-commit when exactly 1 candidate at max length
   auto_clear = true,                       -- Clear invalid codes immediately
+  disable_on_insert_leave = false,         -- Auto-disable IM when leaving insert mode
+  disable_on_insert_enter = false,         -- Auto-disable IM when entering insert mode
 })
 ```
 
@@ -22,12 +23,13 @@ require('shapeim').setup({
 |--------|------|---------|-------------|
 | `dict_path` | `string` | **required** | Path to Rime `.dict.yaml` file. Auto-compiles on startup; recompiles if source is newer than cache. |
 | `toggle_key` | `string` | `"<C-\\>"` | Key binding for toggling the IM on/off. Bound in Insert and Normal modes. |
-| `persist_state` | `boolean` | `true` | If true, the IM toggle state is saved to `stdpath('data')/shapeim_state.json` and restored on next Neovim start. |
 | `debug` | `boolean` | `false` | Show verbose info messages (toggle state, provider detection, compilation progress). |
 | `max_code_length` | `number` | `4` | Code length at which auto-commit triggers. Set to 5 for Cangjie, 4 for Wubi. |
 | `auto_select` | `boolean` | `false` | Auto-commit the first candidate when code reaches max_code_length, even with collisions. |
 | `auto_select_unique_candidate` | `boolean` | `true` | Auto-commit when there is exactly one candidate at max_code_length. |
 | `auto_clear` | `boolean` | `true` | Clear invalid codes immediately. Set to false to allow manual correction. |
+| `disable_on_insert_leave` | `boolean` | `false` | Auto-disable IM when leaving insert mode. One-way: does not restore on re-entry. |
+| `disable_on_insert_enter` | `boolean` | `false` | Auto-disable IM when entering insert mode. One-way: user can manually toggle on afterward. |
 
 ### `toggle()`
 Toggle the IM on/off programmatically.

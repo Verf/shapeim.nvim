@@ -26,6 +26,8 @@ local dict_path = nil
 ---@field auto_select boolean Auto-commit first candidate at max length even with collisions
 ---@field auto_select_unique_candidate boolean Auto-commit when exactly 1 candidate at max length
 ---@field auto_clear boolean Clear invalid codes immediately
+---@field disable_on_insert_leave boolean Auto-disable IM when leaving insert mode
+---@field disable_on_insert_enter boolean Auto-disable IM when entering insert mode
 
 ---Global engine state.
 ---@type shapeim.EngineState
@@ -39,6 +41,8 @@ M.state = {
   auto_select = false,
   auto_select_unique_candidate = true,
   auto_clear = true,
+  disable_on_insert_leave = false,
+  disable_on_insert_enter = false,
 }
 
 ---Get the dictionary source path.
@@ -211,13 +215,19 @@ function M.enable()
   end
   M.state.enabled = true
   M.state.current_code = ""
+  vim.api.nvim_exec_autocmds("User", { pattern = "ShapeimToggle" })
   return true
 end
 
----Disable the IM and reset state.
+---Disable the IM and reset state. Only fires User ShapeimToggle
+---if the state actually changed from enabled to disabled.
 function M.disable()
+  if not M.state.enabled then
+    return
+  end
   M.state.enabled = false
   M.state.current_code = ""
+  vim.api.nvim_exec_autocmds("User", { pattern = "ShapeimToggle" })
 end
 
 ---Toggle the IM on/off.
@@ -251,6 +261,12 @@ function M.configure(opts)
   end
   if opts.auto_clear ~= nil then
     M.state.auto_clear = opts.auto_clear
+  end
+  if opts.disable_on_insert_leave ~= nil then
+    M.state.disable_on_insert_leave = opts.disable_on_insert_leave
+  end
+  if opts.disable_on_insert_enter ~= nil then
+    M.state.disable_on_insert_enter = opts.disable_on_insert_enter
   end
 end
 

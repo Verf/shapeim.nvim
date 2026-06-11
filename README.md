@@ -20,7 +20,6 @@ dictionary (Wubi, Cangjie, Zhengma, etc.) in Rime `.dict.yaml` format.
 - 🛟 **Built-in fallback** — works with vanilla Neovim, mini.completion, and nvim-cmp
 - ⌨️ **Full shape-based input rules** — space commit, 4-key auto-commit, 5th-key auto-top (顶字上屏)
 - 🔄 **Atomic undo** — every character commit is a single undo step
-- 💾 **State persistence** — remembers IM toggle across sessions
 - 📊 **Statusline support** — show `中`/`EN` in lualine or statusline
 
 ## Requirements
@@ -68,7 +67,6 @@ automatically recompiles if the dictionary file is newer.
 
 All shapeim data files are stored under `stdpath("data")/shapeim/`:
 - `cache.mpack` — compiled dictionary cache
-- `state.json` — IM toggle state
 
 ## Quick Start
 
@@ -96,9 +94,6 @@ require("shapeim").setup({
   -- Key to toggle IM on/off
   toggle_key = "<C-\\>",
 
-  -- Remember IM state across Neovim sessions
-  persist_state = true,
-
   -- Show verbose info messages (toggle, provider detection, compilation)
   debug = false,
 
@@ -120,12 +115,13 @@ require("shapeim").setup({
 |--------|------|---------|-------------|
 | `dict_path` | `string` | (required) | Path to `.dict.yaml`. Auto-compiles on startup; recompiles if source is newer. |
 | `toggle_key` | `string` | `"<C-\\>"` | Key binding for IM toggle. |
-| `persist_state` | `boolean` | `true` | Save toggle state to disk, restore on startup. |
 | `debug` | `boolean` | `false` | Show info-level notifications. |
 | `max_code_length` | `number` | `4` | Code length at which auto-commit triggers. 4 for Wubi, 5 for Cangjie. |
 | `auto_select` | `boolean` | `false` | Auto-commit first candidate at max length even with collisions. |
 | `auto_select_unique_candidate` | `boolean` | `true` | Auto-commit when exactly 1 candidate at max length. |
 | `auto_clear` | `boolean` | `true` | Clear invalid codes immediately. Set to `false` to allow manual correction. |
+| `disable_on_insert_leave` | `boolean` | `false` | Auto-disable IM when leaving insert mode. |
+| `disable_on_insert_enter` | `boolean` | `false` | Auto-disable IM when entering insert mode. |
 
 ## Commands
 

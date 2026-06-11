@@ -7,7 +7,8 @@ Core input handling for shapeim.nvim. Implements Rules A-D and the non-a-y inter
 `a-y` characters enter the buffer natively. This module reacts to buffer changes via:
 - `TextChangedI` autocommand (Rules B, C, D, interruption detection)
 - `<Space>` keymap with `expr = true` (Rule A)
-- `InsertLeave` autocommand (code reset)
+- `InsertLeave` autocommand (code reset; optional auto-disable via `disable_on_insert_leave`)
+- `InsertEnter` autocommand (optional auto-disable via `disable_on_insert_enter`)
 
 ## Public API
 
@@ -54,6 +55,11 @@ Atomically replaces `code_len` characters before the cursor with `text`. After r
 - **Rule B (4-key):** Checks `#code == 4` AND `#candidates == 1`. Uses `replace_code()` which repositions cursor after the inserted text.
 - **Rule D (invalid):** Checks `get_candidates(code) == nil`. For codes shorter than 4, also checks `is_valid_prefix(code)` — if the code is a valid prefix of a longer dictionary entry, it is tolerated (user is building up to a full code).
 - **Interruption check:** If last typed char is not `[a-y]`, resets code immediately (before any rule evaluation).
+
+### Auto-Disable on InsertEnter / InsertLeave
+- **disable_on_insert_leave**: When enabled and IM is active, `InsertLeave` autocmd calls `engine.disable()` after `reset_code()`. The engine's `disable()` already guards against redundant calls.
+- **disable_on_insert_enter**: When enabled and IM is active, `InsertEnter` autocmd calls `engine.disable()`.
+- Both are one-way operations (no state tracking/restoration).
 
 ### vim.schedule() Usage
 All buffer modifications in `TextChangedI` callbacks are wrapped in `vim.schedule()` to avoid Neovim lock errors. Before executing the scheduled modification:

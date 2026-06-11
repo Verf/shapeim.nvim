@@ -18,7 +18,6 @@
 - 🛟 **内置降级方案** — 兼容原生 Neovim、mini.completion、nvim-cmp
 - ⌨️ **完整形码输入规则** — 空格上屏、4码唯一自动上屏、5码顶字上屏
 - 🔄 **原子 Undo** — 每次上屏为单步撤销
-- 💾 **状态持久化** — 跨会话记忆输入法开关状态
 - 📊 **状态栏支持** — 在 lualine 或 statusline 中显示 中/EN
 
 ## 环境要求
@@ -66,7 +65,6 @@ require("shapeim").setup({
 
 所有 shapeim 数据文件统一存放在 `stdpath("data")/shapeim/` 下：
 - `cache.mpack` — 编译后的码表缓存
-- `state.json` — 输入法开关状态
 
 ## 快速开始
 
@@ -94,9 +92,6 @@ require("shapeim").setup({
   -- 切换输入法的快捷键
   toggle_key = "<C-\\>",
 
-  -- 跨 Neovim 会话记忆输入法状态
-  persist_state = true,
-
   -- 显示详细提示信息（切换、补全检测、编译进度等）
   debug = false,
 
@@ -118,12 +113,13 @@ require("shapeim").setup({
 |--------|------|---------|-------------|
 | `dict_path` | `string` | （必填） | `.dict.yaml` 码表路径。启动时自动编译，源码表更新则重编译 |
 | `toggle_key` | `string` | `"<C-\\>"` | 输入法切换快捷键 |
-| `persist_state` | `boolean` | `true` | 开关状态持久化到磁盘，下次启动恢复 |
 | `debug` | `boolean` | `false` | 显示 info 级别的通知消息 |
 | `max_code_length` | `number` | `4` | 自动上屏码长。五笔=4，仓颉=5 |
 | `auto_select` | `boolean` | `false` | 到达最大码长时始终上屏第一个候选（有重码也上屏） |
 | `auto_select_unique_candidate` | `boolean` | `true` | 到达最大码长且仅有唯一候选时自动上屏 |
 | `auto_clear` | `boolean` | `true` | 立即清除无效编码。设为 false 允许手动修正 |
+| `disable_on_insert_leave` | `boolean` | `false` | 离开 Insert 时自动关闭输入法 |
+| `disable_on_insert_enter` | `boolean` | `false` | 进入 Insert 时自动关闭输入法 |
 
 ## 命令
 

@@ -236,11 +236,24 @@ function M.setup()
     callback = M.on_text_changed,
   })
 
-  -- Reset code on InsertLeave
+  -- Reset code on InsertLeave; optionally auto-disable IM
   vim.api.nvim_create_autocmd("InsertLeave", {
     group = augroup,
     callback = function()
       engine.reset_code()
+      if engine.state.disable_on_insert_leave and engine.state.enabled then
+        engine.disable()
+      end
+    end,
+  })
+
+  -- Optionally auto-disable IM on InsertEnter
+  vim.api.nvim_create_autocmd("InsertEnter", {
+    group = augroup,
+    callback = function()
+      if engine.state.disable_on_insert_enter and engine.state.enabled then
+        engine.disable()
+      end
     end,
   })
 end

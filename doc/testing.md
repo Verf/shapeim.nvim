@@ -65,6 +65,21 @@ Run in a Neovim instance with shapeim installed, dictionary compiled, and blink.
 - [ ] After a commit (Space, auto-commit, auto-top), press `u` → single undo step restores the code
 - [ ] `.` (repeat) works after commits
 
+### disable_on_insert_leave
+- [ ] Default (`false`) → leaving Insert keeps IM state unchanged
+- [ ] `true`, IM enabled → leaving Insert auto-disables IM (status shows "EN")
+- [ ] `true`, IM already disabled → leaving Insert does nothing
+- [ ] `true`, auto-disable triggers `User ShapeimToggle` (statusline updates)
+
+### disable_on_insert_enter
+- [ ] Default (`false`) → entering Insert keeps IM state unchanged
+- [ ] `true`, IM enabled → entering Insert auto-disables IM (status shows "EN")
+- [ ] `true`, IM already disabled → entering Insert does nothing
+- [ ] `true`, auto-disable then manually toggle on → IM works normally during insert
+
+### Both options enabled
+- [ ] Enter Insert → auto-disabled → toggle on → type → leave Insert → auto-disabled again
+
 ### Interruption
 - [ ] Type partial code, move cursor with arrow keys → code resets
 - [ ] Type partial code, press Enter → code resets

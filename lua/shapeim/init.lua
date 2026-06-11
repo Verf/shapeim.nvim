@@ -5,7 +5,6 @@
 ---   require('shapeim').setup({
 ---     dict_path = "~/rime/wubi86.dict.yaml",
 ---     toggle_key = "<C-\\>",
----     persist_state = true,
 ---     debug = false,
 ---     max_code_length = 4,   -- 4 for Wubi, 5 for Cangjie
 ---     auto_select = false,
@@ -22,23 +21,25 @@ local compiler
 ---@class shapeim.SetupOpts
 ---@field dict_path string Path to .dict.yaml (required).
 ---@field toggle_key string Key binding for IM toggle (default: "<C-\\>").
----@field persist_state boolean Remember IM state across sessions (default: true).
 ---@field debug boolean Show verbose info messages (default: false).
 ---@field max_code_length number Code length at which auto-commit triggers (default: 4, Wubi; use 5 for Cangjie).
 ---@field auto_select boolean Auto-commit first candidate at max_code_length even with collisions (default: false).
 ---@field auto_select_unique_candidate boolean Auto-commit when exactly 1 candidate at max_code_length (default: true).
 ---@field auto_clear boolean Clear invalid codes immediately (default: true).
+---@field disable_on_insert_leave boolean Auto-disable IM when leaving insert mode (default: false).
+---@field disable_on_insert_enter boolean Auto-disable IM when entering insert mode (default: false).
 
 ---Default configuration.
 local defaults = {
   dict_path = nil,
   toggle_key = "<C-\\>",
-  persist_state = true,
   debug = false,
   max_code_length = 4,
   auto_select = false,
   auto_select_unique_candidate = true,
   auto_clear = true,
+  disable_on_insert_leave = false,
+  disable_on_insert_enter = false,
 }
 
 ---Conditionally show an info-level notification (only when debug is true).
@@ -58,52 +59,9 @@ local function err(msg)
   vim.notify(msg, vim.log.levels.ERROR)
 end
 
--- State persistence file.
-local function state_file_path()
-  return vim.fn.stdpath("data") .. "/shapeim/state.json"
-end
-
----Save the current enabled state to a JSON file.
-local function persist_state()
-  local ok, json = pcall(vim.json.encode, { enabled = engine.state.enabled })
-  if not ok then
-    return
-  end
-  local f, io_err = io.open(state_file_path(), "w")
-  if not f then
-    return
-  end
-  f:write(json)
-  f:close()
-end
-
----Restore the saved state from the JSON file.
-local function restore_state()
-  local path = state_file_path()
-  if not vim.fn.filereadable(path) then
-    return
-  end
-  local f, io_err = io.open(path, "r")
-  if not f then
-    return
-  end
-  local raw = f:read("*a")
-  f:close()
-  local ok, data = pcall(vim.json.decode, raw)
-  if ok and data and data.enabled then
-    engine.enable()
-  end
-end
-
----Toggle the IM and persist state if configured.
+---Toggle the IM.
 local function toggle_im()
-  local new_state = engine.toggle()
-  -- Emit User event so downstream consumers (statusline, lualine, etc.)
-  -- can react to state changes in real time.
-  vim.api.nvim_exec_autocmds("User", { pattern = "ShapeimToggle" })
-  if M._config.persist_state then
-    persist_state()
-  end
+  engine.toggle()
   info("shapeim: " .. engine.status())
 end
 
@@ -214,13 +172,6 @@ function M.setup(opts)
   -- Setup input handling (keymaps, autocommands)
   local keymap = require("shapeim.keymap")
   keymap.setup()
-
-  -- Restore persisted state
-  if M._config.persist_state then
-    vim.schedule(function()
-      restore_state()
-    end)
-  end
 end
 
 ---Toggle the IM on/off programmatically.

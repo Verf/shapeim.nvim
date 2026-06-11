@@ -138,12 +138,13 @@ end
 |--------|------|---------|-------------|
 | `dict_path` | string\|nil | nil | Path to .dict.yaml |
 | `toggle_key` | string | `"<C-\\>"` | Toggle keymap |
-| `persist_state` | boolean | true | Save state to disk |
 | `debug` | boolean | false | Show info notifications |
 | `max_code_length` | number | 4 | Code length for auto-commit (4=Wubi, 5=Cangjie) |
 | `auto_select` | boolean | false | Auto-commit first at max length even with collisions |
 | `auto_select_unique_candidate` | boolean | true | Auto-commit when exactly 1 candidate at max length |
 | `auto_clear` | boolean | true | Clear invalid codes immediately |
+| `disable_on_insert_leave` | boolean | false | Auto-disable IM on InsertLeave |
+| `disable_on_insert_enter` | boolean | false | Auto-disable IM on InsertEnter |
 
 ## State Machine (engine.state)
 
@@ -151,6 +152,7 @@ end
 engine.state = {
   enabled, current_code, dict_loaded, dict, prefix_set,
   max_code_length, auto_select, auto_select_unique_candidate, auto_clear,
+  disable_on_insert_leave, disable_on_insert_enter,
 }
 ```
 
